@@ -86,7 +86,11 @@ class KbIndex:
 
 
 def load_kb_index(documents_dir) -> Optional[KbIndex]:
-    """None when `documents_dir` doesn't exist (no KB configured — see attribution.py)."""
+    """None when `documents_dir` doesn't exist (no KB configured — see attribution.py).
+
+    Each session's metadata.csv lists every document in it, so the index is complete from
+    the CSVs alone (they are versioned; the 395 MB of PDFs are not). PDFs present on disk
+    are added too, in case a folder has files its metadata.csv doesn't list."""
     d = Path(documents_dir)
     if not d.is_dir():
         return None
@@ -99,8 +103,9 @@ def load_kb_index(documents_dir) -> Optional[KbIndex]:
         with open(meta, encoding="utf-8", newline="") as fh:
             for m in csv.DictReader(fh):
                 cid = canonical_id(meta.parent / m["filename"], d)
-                if cid is None or cid not in idx.names:
+                if cid is None:
                     continue
+                idx.names.add(cid)
                 house = "ls" if m["house"].strip().lower().startswith("lok") else "rs"
                 assembly = int(m["house_no"]) if house == "ls" else None
                 key = (house, assembly, int(m["session"]), int(m["q_no"]),

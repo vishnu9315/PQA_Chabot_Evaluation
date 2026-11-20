@@ -48,6 +48,17 @@ def test_unresolvable_expected_source_returns_none(tmp_path):
     assert idx.resolve({"document": "x.md"}) is None
 
 
+def test_index_is_complete_from_metadata_csv_alone(tmp_path):
+    """A clone has the metadata.csv files but not the PDFs; matching must still work."""
+    corpus = _corpus(tmp_path)
+    for pdf in corpus.rglob("*.pdf"):
+        pdf.unlink()
+    idx = load_kb_index(corpus)
+    assert "lok_sabha/lok_sabha_18/Session_VIII/AU2878_rN86Hc.md" in idx.names
+    assert idx.resolve({"session": "rs-270", "qno": 239, "parl_type": "starred"}) == \
+        "rajya_sabha/Session_270/AS239_CYnH3S.md"
+
+
 def test_missing_documents_dir_means_no_kb(tmp_path):
     assert load_kb_index(tmp_path / "absent") is None
 

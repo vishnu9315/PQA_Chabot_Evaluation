@@ -31,11 +31,13 @@ It has three stages:
 
 ## Quickstart
 
+New to the project? Follow [SETUP.md](SETUP.md) step by step.
+
 Not in this repo, and needed locally:
 
-- `.env` — copy `.env.example` and fill in your own AWS Bedrock credentials and settings.
-- `documents/` — the 2,250 Lok Sabha / Rajya Sabha reply PDFs (395 MB), shared separately.
-  Without them scoring still runs, but the knowledge-base citation check is skipped.
+- `.env` — copy `.env.example` and fill in your own AWS Bedrock credentials.
+- The PDFs in `documents/` (395 MB), shared separately. Each session's `metadata.csv` is in
+  the repository and is all the citation matching needs; the PDFs are only for reading.
 - Run outputs (`runs/`) — produced by `cli.py`.
 
 Included: the 20 Nov 2026 capture of the chatbot's answers

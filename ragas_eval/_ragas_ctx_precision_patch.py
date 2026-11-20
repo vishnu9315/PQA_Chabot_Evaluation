@@ -24,10 +24,10 @@ extra few-shot example demonstrating verdict=1 for a chunk that supports a singl
 a long multi-fact answer. `examples` is a class-level list shared across instances, so a
 new list is assigned (`cls.examples = cls.examples + [new]`), never `.append()`.
 
-Code default stock; this project runs hardened
------------------------------------------------
-Env knob `CTX_PRECISION_JUDGE`: `stock` | `hardened`. The code default stays `stock`; this
-project sets `hardened` in `.env` after its own 2026-11-20 calibration (runs_calib/): stock
+Default hardened
+----------------
+Env knob `CTX_PRECISION_JUDGE`: `stock` | `hardened`. The default is `hardened`, adopted
+after this project's 2026-11-20 calibration (runs_calib/, kept locally): stock
 false-zeroed the two-document row GD-MTY-MULTI-01-N (0.00, vs 0.50 from both the non-LLM
 containment check and context recall), while hardened matched containment on 6/6 rows. The
 recall arm stays stock. The resolved mode is recorded per cell and in
@@ -46,9 +46,9 @@ _log = logging.getLogger(__name__)
 
 KNOB = "CTX_PRECISION_JUDGE"
 _VALID = ("stock", "hardened")
-# Code default is the stock prompt; a project opts into `hardened` via .env only after its
-# own calibration (this project did on 2026-11-20 - see the module docstring).
-_DEFAULT = "stock"
+# Default is `hardened`: this project's 2026-11-20 calibration (module docstring) found the
+# stock prompt false-zeroes multi-document rows. Set CTX_PRECISION_JUDGE=stock to compare.
+_DEFAULT = "hardened"
 
 _PATCHED = False
 _MODE = "stock"

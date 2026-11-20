@@ -15,8 +15,12 @@ data/artifacts/*
 !data/artifacts/golden_dataset_new_chatbot_captured.json
 !data/artifacts/golden_dataset_final_unified_eval.json
 
-# Source documents (395 MB) are shared separately; drop them into documents/ locally.
-documents/
+# Source documents (395 MB of PDFs) are shared separately; drop them into documents/
+# locally. Each session's metadata.csv (722 KB in total) IS versioned: it lists every
+# document, which is all the citation matching needs (ragas_eval/kb_index.py).
+documents/**
+!documents/**/
+!documents/**/metadata.csv
 documents*.zip
 
 # Chatbot outputs from the login-only portal stay local.
