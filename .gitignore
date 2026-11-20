@@ -10,6 +10,10 @@ runs/
 data/artifacts/*
 !data/artifacts/.gitkeep
 !data/artifacts/judge_prompts_v1.md
+# The 2026-11-20 capture of the MeitY chatbot and the scoring input built from it, so a
+# teammate can score without re-capturing. The capture debug log stays local.
+!data/artifacts/golden_dataset_new_chatbot_captured.json
+!data/artifacts/golden_dataset_final_unified_eval.json
 
 # Source documents (395 MB) are shared separately; drop them into documents/ locally.
 documents/

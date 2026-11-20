@@ -36,8 +36,12 @@ Not in this repo, and needed locally:
 - `.env` — copy `.env.example` and fill in your own AWS Bedrock credentials and settings.
 - `documents/` — the 2,250 Lok Sabha / Rajya Sabha reply PDFs (395 MB), shared separately.
   Without them scoring still runs, but the knowledge-base citation check is skipped.
-- Captured chatbot answers (`data/artifacts/golden_dataset_*`) and run outputs (`runs/`) —
-  produce your own with the capture step below, using your own portal login.
+- Run outputs (`runs/`) — produced by `cli.py`.
+
+Included: the 20 Nov 2026 capture of the chatbot's answers
+(`data/artifacts/golden_dataset_new_chatbot_captured.json`) and the scoring input built from
+it (`data/artifacts/golden_dataset_final_unified_eval.json`), so you can run `--validate` and
+`--all` without capturing. Re-capture with the steps below only if you want fresh answers.
 
 ```bash
 # one-time setup (Python 3.10.x required — see requirements.lock.txt)
