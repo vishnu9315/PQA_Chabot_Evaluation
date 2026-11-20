@@ -63,6 +63,15 @@ _SYSTEM = (
     "on a 0-1 scale. Return ONLY a single JSON object matching the OUTPUT schema and "
     "nothing else.")
 
+# Shown to the Response-Quality judge on Part 2 rows (golden_dataset_README.md section 4.3):
+# their official reply is deliberately absent from the knowledge base.
+_PART2_NOTE = (
+    "The official reply to this question is NOT in the chatbot's knowledge base. Acceptable "
+    "behaviour: saying the information is not available, or answering from an older reply "
+    "with its date made clear. Score the behaviour dimension 1.0 for either. Penalise "
+    "invented figures, old figures presented as current without a date, or claiming to "
+    "quote the missing reply.")
+
 # Shown to the Sources-Validation judge when a local KB document corpus IS configured
 # (cfg.kb_dir exists) - the mechanical membership check is authoritative.
 _SOURCES_AMENDMENT_WITH_KB = (
@@ -132,6 +141,8 @@ def fields_for(canon: str, item: dict, hint: Optional[dict]) -> list:
                   ("expected_behavior", item["expected_behavior"]),
                   ("unsupported_aspects", item["unsupported_aspects"]),
                   ("response", item["response"])]
+        if item.get("part") == "2-not-ingested":
+            fields.append(("knowledge_base_note", _PART2_NOTE))
         if item["expected_behavior"] == "answer_partial" and not item["unsupported_aspects"]:
             # GD-V1 partial rows never had unsupported_aspects; the gap statements inside
             # `reference` carry the expectation (S10 ROUTING) — show it only then.
@@ -264,14 +275,41 @@ def _as_unit(v) -> Optional[float]:
     return x if 0.0 <= x <= 1.0 else None
 
 
+_VERDICT_VALUE = {"PRESENT": 1.0, "PARTIAL": 0.5, "ABSENT": 0.0}
+_FACT_WEIGHT = {"core": 1.0, "supporting": 0.25}
+
+
+def completeness_from_verdicts(per_fact) -> Optional[float]:
+    """Weighted share of facts: PRESENT 1, PARTIAL 0.5, ABSENT 0; core weight 1, supporting
+    0.25 (judge_prompts_v1.md). None if any verdict or weight is unrecognised."""
+    if not isinstance(per_fact, list) or not per_fact:
+        return None
+    num = den = 0.0
+    for f in per_fact:
+        if not isinstance(f, dict):
+            return None
+        v = _VERDICT_VALUE.get(str(f.get("verdict", "")).strip().upper())
+        w = _FACT_WEIGHT.get(str(f.get("weight", "")).strip().lower())
+        if v is None or w is None:
+            return None
+        num += w * v
+        den += w
+    return round(num / den, 4)
+
+
 def coerce(raw: dict, canon: str, sid: str, hint: Optional[dict]) -> dict:
     """Validate + derive the cell score from the judge's JSON. Never raises."""
     rec = {"id": sid, "metric": canon, "score": None, "na_reason": None,
            "justification": str(raw.get("justification") or ""), "detail": {}}
     if canon == "completeness":
-        rec["score"] = _as_unit(raw.get("score"))
-        rec["detail"] = {"per_fact": raw.get("per_fact") or [],
-                         "absent_core": raw.get("absent_core") or []}
+        per_fact = raw.get("per_fact") or []
+        # Recompute from the verdicts with the rubric's fixed rule; never trust the judge's
+        # own arithmetic. Falls back to its score only if the verdicts are unusable.
+        recomputed = completeness_from_verdicts(per_fact)
+        rec["score"] = recomputed if recomputed is not None else _as_unit(raw.get("score"))
+        rec["detail"] = {"per_fact": per_fact,
+                         "absent_core": raw.get("absent_core") or [],
+                         "judge_reported_score": _as_unit(raw.get("score"))}
     elif canon == "response_quality":
         dims = raw.get("dimensions") or {}
         vals = [_as_unit(dims.get(k)) for k in ("register", "structure", "behaviour", "figures")]

@@ -180,6 +180,7 @@ class Sample:
             "expected_sources": list(self.expected_sources),
             "reference_contexts": list(self.reference_contexts),
             "prior_turn": self.prior_turn,
+            "part": self.part,
         }
 
 

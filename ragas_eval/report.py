@@ -77,9 +77,9 @@ INTERPRETATION_NOTES = [
     ("No Hallucination judge.", "Faithfulness covers grounding-to-retrieval; Answer "
      "Correctness catches wrong figures vs reference."),
     ("Sources Validation", "honours `acceptable` satisfying `required` (cross-House twins) "
-     "and uses the `documents/` corpus as the fabrication floor. Its precision counts every "
-     "document the chatbot lists, so a row listing several related replies scores low "
-     "precision even when the right one is cited; read recall and precision separately."),
+     "and uses the `documents/` corpus as the fabrication floor. Precision only counts "
+     "against listed documents that support nothing in the answer, so related replies that "
+     "back up its claims are not penalised; read recall and precision separately."),
     ("Context Precision", "never sees the response; it measures the retriever over up to 10 "
      "captured chunks (hardened prompt, see docs/RAGAS_SCORING.md section 5)."),
     ("Refusals", "(\"I could not find an answer to that question.\") make no claims, so "
@@ -158,9 +158,10 @@ def part2_block(per_sample) -> list:
     lacks, flagged, cited = f["lacks"], f["flagged"], f["cited_missing"]
     sessions = missing_sessions_text(f)
     L = ["## 9. Part 2 (not ingested) — how the assistant behaves without the document", "",
-         f"Part 2's answer documents ({sessions}) are not in the KB, so source recall / "
-         "precision are 0 **by design** and are not failures. Faithfulness is the main "
-         "measure here (golden_dataset_README.md section 4).", ""]
+         f"Part 2's answer documents ({sessions}) are not in the KB, so source recall is 0 "
+         "**by design** and is not a failure; precision reflects whether the older replies "
+         "listed support the answer. Faithfulness is the main measure here "
+         "(golden_dataset_README.md section 4).", ""]
     L.append(_md_table(["metric", "Part 1 (ingested)", "Part 2 (not ingested)"],
                        [["faithfulness, answered rows (refusals make no claims, excluded)",
                          _mean_n(p1_ans, "faithfulness"), _mean_n(p2_ans, "faithfulness")],

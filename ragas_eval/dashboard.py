@@ -125,8 +125,9 @@ def _part2_section(per_sample, esc) -> list:
         return []
     out = ['<h2>Part 2 (not ingested) — behaviour without the document</h2>',
            '<div class="small">Part 2 answer documents are not in the knowledge base, so source '
-           'recall and precision are 0 by design and are not failures. Faithfulness is the main '
-           'measure (golden_dataset_README.md section 4).</div>',
+           'recall is 0 by design and is not a failure; precision reflects whether the older '
+           'replies listed support the answer. Faithfulness is the main measure '
+           '(golden_dataset_README.md section 4).</div>',
            '<div class="tablewrap" style="margin-top:8px"><table><tr><th>metric</th>'
            '<th>Part 1 (ingested)</th><th>Part 2 (not ingested)</th></tr>']
     rows = [("faithfulness, answered rows (refusals make no claims, excluded)",

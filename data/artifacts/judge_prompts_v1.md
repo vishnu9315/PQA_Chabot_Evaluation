@@ -28,7 +28,8 @@ chatbot's response: for each required fact state PRESENT, PARTIAL or ABSENT, jud
 by meaning rather than wording — a figure restated with correct value and unit counts
 as PRESENT even if phrased differently; a figure without its stated vintage where the
 required fact carries one counts as PARTIAL.
-Score = (core PRESENT / core total) with supporting facts contributing at 0.25 weight.
+Score = weighted share of facts: PRESENT counts 1, PARTIAL 0.5, ABSENT 0; each core
+fact has weight 1 and each supporting fact weight 0.25.
 Report the score, and list every ABSENT core fact.
 ```
 
@@ -40,8 +41,11 @@ Given the response's cited sources and expected_sources:
   claim SATISFIES a required one — if this corpus states the same figure in more than
   one document (e.g. twin House questions on the same subject), citing either is
   correct, not a miss.
-- any cited source absent from the expected list?          (precision — but a source
-  marked `acceptable` must not be penalised)
+- precision: of the cited sources, how many support at least one claim in the
+  response? A cited source that is not in the expected list is NOT wrong if it
+  supports a claim in the response (for example a related reply carrying the same or
+  supporting facts); only cited sources that support nothing in the response lower
+  precision. A source marked `acceptable` is never penalised.
 - any cited source that does not exist in the knowledge base? (fabrication — automatic 0)
 - does each citation point at a document that actually contains the claim it is
   attached to?
@@ -54,8 +58,8 @@ citations; any citation is a fabrication.
 ```
 Given the question, response, and expected_behavior:
 - Register: third-person official reply prose fit for a parliamentary answer. Penalise
-  first person, chat filler, markdown headings, and bullet dumps where the source
-  documents use prose.
+  first person and chat filler. Markdown formatting (bold sub-headings, tables, lists)
+  is acceptable for this chatbot and is not a defect.
 - Structure: if the question has lettered parts, are they addressed distinctly and in
   order?
 - Behaviour match: answer_full — no unnecessary hedging. answer_partial — supported

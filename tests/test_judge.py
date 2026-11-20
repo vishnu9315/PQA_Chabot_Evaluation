@@ -134,6 +134,40 @@ def test_rq_mean_is_recomputed_from_dimensions():
     assert rec["score"] == 0.5                      # never trusts the reported mean
 
 
+def test_completeness_score_is_recomputed_from_verdicts():
+    per_fact = [{"fact": "a", "weight": "core", "verdict": "PRESENT"},
+                {"fact": "b", "weight": "core", "verdict": "PARTIAL"},
+                {"fact": "c", "weight": "core", "verdict": "ABSENT"},
+                {"fact": "d", "weight": "supporting", "verdict": "PRESENT"}]
+    rec = J.coerce({"score": 0.99, "per_fact": per_fact}, "completeness", "GD-X", None)
+    assert rec["score"] == round((1 + 0.5 + 0 + 0.25) / 3.25, 4)
+    assert rec["detail"]["judge_reported_score"] == 0.99
+
+
+def test_completeness_falls_back_to_judge_score_on_unusable_verdicts():
+    rec = J.coerce({"score": 0.6, "per_fact": [{"fact": "a", "weight": "core",
+                                                 "verdict": "MAYBE"}]},
+                   "completeness", "GD-X", None)
+    assert rec["score"] == 0.6
+
+
+def test_part2_note_reaches_only_the_response_quality_judge_on_part2_rows():
+    from dataclasses import replace
+    p2 = replace(make_sample(), part="2-not-ingested").judge_item()
+    p1 = replace(make_sample(), part="1-ingested").judge_item()
+    rq2 = dict(J.fields_for("response_quality", p2, None))
+    assert "NOT in the chatbot's knowledge base" in rq2["knowledge_base_note"]
+    assert "knowledge_base_note" not in dict(J.fields_for("response_quality", p1, None))
+    assert "knowledge_base_note" not in dict(J.fields_for("completeness", p2, None))
+
+
+def test_rubrics_carry_the_approved_2026_11_20_changes():
+    rubrics = J.parse_judge_prompts(load_config().judge_prompts_md.read_text(encoding="utf-8"))
+    assert "Markdown formatting" in rubrics["response_quality"]
+    assert "support nothing in the response" in rubrics["sources_validation"]
+    assert "PARTIAL 0.5" in rubrics["completeness"]
+
+
 def test_out_of_range_score_becomes_na():
     rec = J.coerce({"score": 3.7}, "completeness", "GD-X", None)
     assert rec["score"] is None
