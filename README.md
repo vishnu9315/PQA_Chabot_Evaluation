@@ -55,15 +55,69 @@ cp .env.example .env      # fill in AWS_*, PQA_CHATBOT_*, GOLDEN_EXPECTED_*
 .venv/Scripts/python.exe cli.py --all               # PAID full run — only once approved
 ```
 
-To re-capture chatbot responses (needs a fresh `auth-capture/.auth/default.json` — the
-`pqa_session` cookie's real lifetime is short, ~30 minutes after login):
+Scoring never contacts the portal. A portal login is needed only to capture new answers.
+
+## Capturing fresh answers
+
+### 1. Log in to the portal (saves a session for about 30 minutes)
 
 ```bash
-.venv/Scripts/python.exe capture_new_chatbot.py --dry-run     # sanity check, no network
-.venv/Scripts/python.exe capture_new_chatbot.py --ids <one-row-id>   # one real call first
-.venv/Scripts/python.exe capture_new_chatbot.py                # full capture, skips done rows
-.venv/Scripts/python.exe tools/build_unified_eval.py            # promote capture -> scoring input
+cd auth-capture
+npm install
+npx playwright install chromium
+cp .env.example .env          # nothing to fill in; the portal address is preset
+npm run login                 # asks for YOUR portal email, then the emailed 6-digit code
 ```
+
+You have about 3 minutes to enter the code. The session is saved to
+`auth-capture/.auth/default.json` (git-ignored), which `PQA_CHATBOT_SESSION_FILE` points at.
+Start the capture straight away: the session expires about 30 minutes after login.
+Verified end to end against the MeitY portal on 20 Nov 2026.
+
+### 2. Capture
+
+The repository already holds a capture, and the script skips rows that already have an
+answer. **Use `--force` to re-ask every question**, and `--out` to keep the old capture:
+
+```bash
+.venv/Scripts/python.exe capture_new_chatbot.py --dry-run          # sanity check, no network
+.venv/Scripts/python.exe capture_new_chatbot.py --ids <one-row-id> --force --out data/artifacts/capture_<date>.json
+.venv/Scripts/python.exe capture_new_chatbot.py --force --out data/artifacts/capture_<date>.json
+.venv/Scripts/python.exe tools/build_unified_eval.py --captured data/artifacts/capture_<date>.json
+.venv/Scripts/python.exe cli.py --validate
+.venv/Scripts/python.exe cli.py --all
+```
+
+`build_unified_eval.py` overwrites `data/artifacts/golden_dataset_final_unified_eval.json`,
+the file `cli.py` scores. Scores are cached per dataset content, so a new capture is always
+scored fresh.
+
+### Using a new dataset
+
+1. Give each row the fields listed under [Golden dataset schema](#golden-dataset-schema).
+   Optional fields the framework uses when present: `provenance.part` (`1-ingested` /
+   `2-not-ingested`, reported separately), `provenance.query_style`,
+   `provenance.follow_up_of` (asks a follow-up in the same chat as its first question) and
+   `unsupported_aspects` on `answer_partial` rows.
+2. Give each `expected_sources` entry `session` (e.g. `ls18-viii`, `rs-271`), `qno` and
+   `parl_type`, so citations can be matched to the knowledge base. Add the documents for any
+   new ingested session to `documents/`, with that session's `metadata.csv`.
+3. Set the dataset's counts in `.env`: `GOLDEN_EXPECTED_TOTAL_ROWS`,
+   `GOLDEN_EXPECTED_RAGAS_ELIGIBLE`, `GOLDEN_EXPECTED_JUDGE_ONLY_IDS` and `MOC_EXPECTED_N`.
+   The scripts stop with a clear message if they don't match the file.
+4. Capture and score:
+
+```bash
+.venv/Scripts/python.exe capture_new_chatbot.py --golden new_dataset.json --out data/artifacts/new_captured.json
+.venv/Scripts/python.exe tools/build_unified_eval.py --captured data/artifacts/new_captured.json
+.venv/Scripts/python.exe cli.py --validate
+.venv/Scripts/python.exe cli.py --all
+```
+
+The Part 2 check reads the not-ingested sessions from the Part 2 rows' own
+`expected_sources`, so it follows the dataset. The framework is built for the MeitY portal:
+another ministry's chatbot needs its own endpoint (`chatbot_endpoint_config.json`), judge
+wording (`ragas_eval/judge_runner.py`) and report titles.
 
 ## Golden dataset schema
 

@@ -104,7 +104,7 @@ def build_per_sample(samples, cache, metric_names=None) -> list:
                "expected_sources": [e.get("document") for e in s.expected_sources],
                "expected_sources_detail": [
                    {"document": e.get("document"), "necessity": e.get("necessity", "required"),
-                    "authored_as": e.get("document_as_authored")}
+                    "authored_as": e.get("document_as_authored"), "session": e.get("session")}
                    for e in s.expected_sources if isinstance(e, dict)],
                "unsupported_aspects": list(s.unsupported_aspects),
                "metrics": {}}

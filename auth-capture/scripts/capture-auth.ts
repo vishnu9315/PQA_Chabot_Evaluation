@@ -11,13 +11,13 @@ const workspaces = getWorkspaces();
  * One-time, human-assisted session capture, producing a Playwright storageState JSON per
  * workspace in fixtures/workspaces.ts - for capture_new_chatbot.py's PQA_CHATBOT_SESSION_FILE.
  *
- * TEMPLATE: copied from a previous project with the same login flow you described (email,
- * then a real emailed 6-digit code, no dev-sign-in shortcut) - so this cannot be re-run
- * unattended; it requests a code, then pauses and polls OTP_RELAY_PATH for up to
- * OTP_WAIT_MS. Write the 6-digit code you receive by email into that file (plain text,
- * nothing else) to unblock it.
+ * The portal logs in with an emailed 6-digit code, so this cannot run unattended: it
+ * requests a code, then polls OTP_RELAY_PATH for up to OTP_WAIT_MS. `npm run login`
+ * (scripts/login.mjs) asks for your email and the code in the terminal and writes the
+ * code to that file for you; if you run `npm run auth:capture` directly, write the code
+ * into the file yourself.
  *
- * Run via `npm run auth:capture` whenever the saved session(s) expire.
+ * Run whenever the saved session expires (about 30 minutes after login).
  *
  * One login is shared across every workspace: after verifying the OTP once, the script
  * walks each configured workspace (running its selectInApp, a no-op by default) and saves

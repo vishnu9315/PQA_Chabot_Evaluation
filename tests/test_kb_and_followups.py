@@ -90,8 +90,9 @@ def test_followup_judges_see_the_earlier_turn_but_sources_judge_does_not():
 def test_part2_block_reports_readme_section_4_4_items():
     from ragas_eval.report import part2_block
 
-    def rec(rid, part, faith, resp="Figures as of March 2026 are 15.", cited=()):
+    def rec(rid, part, faith, resp="Figures as of March 2026 are 15.", cited=(), session="rs-271"):
         return {"id": rid, "provenance": part, "response": resp, "cited_sources": list(cited),
+                "expected_sources_detail": [{"document": "x.pdf", "session": session}],
                 "metrics": {"faithfulness": {"score": faith}, "completeness": {"score": 0.5}}}
     recs = [rec("P1", "part1-ingested", 0.9),
             rec("P2-ok", "part2-not-ingested", 0.95),
@@ -101,8 +102,25 @@ def test_part2_block_reports_readme_section_4_4_items():
     text = "\n".join(part2_block(recs))
     assert "1/2 — P2-bad" in text          # refusal excluded from the answered-row count
     assert "1/3 — P2-refuse" in text
-    assert "none — Session 271 is absent" in text
+    assert "Documents from Rajya Sabha Session 271 cited" in text
+    assert "none — absent from the KB" in text
     cited = recs + [rec("P2-271", "part2-not-ingested", 0.9,
                         cited=["rajya_sabha/Session_271/AU713_x.md"])]
     assert "YES on P2-271" in "\n".join(part2_block(cited))
     assert part2_block([recs[0]]) == []
+
+
+def test_part2_check_follows_the_dataset_not_a_fixed_session():
+    from ragas_eval.report import part2_block
+
+    def rec(rid, part, cited, session):
+        return {"id": rid, "provenance": part, "response": "An answer.", "cited_sources": cited,
+                "expected_sources_detail": [{"document": "x.pdf", "session": session}],
+                "metrics": {"faithfulness": {"score": 0.9}}}
+    text = "\n".join(part2_block([
+        rec("A", "part1-ingested", [], "ls18-viii"),
+        rec("B", "part2-not-ingested", ["lok_sabha/lok_sabha_18/Session_IX/AU1_x.md"], "ls18-ix")]))
+    assert "Lok Sabha 18 Session IX" in text and "YES on B" in text
+    assert "271" not in text
+    no_session = "\n".join(part2_block([rec("C", "part2-not-ingested", [], None)]))
+    assert "not checked" in no_session

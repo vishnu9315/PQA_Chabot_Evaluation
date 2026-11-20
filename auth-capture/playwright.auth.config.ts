@@ -4,10 +4,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 /**
- * One-off config for scripts/capture-auth.ts - run only via `npm run auth:capture`.
- *
- * TEMPLATE: copied from a previous project. Set PQA_BASE_URL in .env to your own app's
- * origin before running - see README.md's "Adapting this template" checklist.
+ * One-off config for scripts/capture-auth.ts - run via `npm run login` (or
+ * `npm run auth:capture` with PQA_IDENTITY_EMAIL set). PQA_BASE_URL comes from .env.
  *
  * Headed, single-worker, no retries: a human relays a real emailed OTP mid-run (see
  * scripts/capture-auth.ts), so parallelism or auto-retry here would just race multiple
@@ -21,8 +19,7 @@ export default defineConfig({
   workers: 1,
   timeout: 5 * 60_000,
   use: {
-    // TEMPLATE: no default on purpose - set PQA_BASE_URL in .env (copy .env.example).
-    baseURL: process.env.PQA_BASE_URL,
+    baseURL: process.env.PQA_BASE_URL ?? 'https://pqa.myscheme.in/meityy',
     // Headless by default: flip to false locally if you want to watch it run. Nothing
     // about the OTP relay depends on a visible window - the file-based handoff in
     // scripts/capture-auth.ts works identically either way.

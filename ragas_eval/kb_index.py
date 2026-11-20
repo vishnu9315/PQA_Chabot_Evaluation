@@ -13,7 +13,7 @@ The golden dataset's `expected_sources[].document` uses yet another spelling (th
 as QA received them, e.g. `.../Unstarred Question_2878_050826.docx`), so expected sources are
 resolved through each session's `metadata.csv` on (house, assembly, session, question no,
 question type) — fields every expected_sources entry carries. An entry that does not resolve
-(e.g. Part 2's Rajya Sabha 271 replies, deliberately absent from the KB) keeps its authored
+(e.g. Part 2's not-ingested replies, deliberately absent from the KB) keeps its authored
 name and simply cannot be matched by any citation.
 """
 from __future__ import annotations
@@ -49,6 +49,24 @@ def _session_key(session: str) -> Optional[tuple]:
     if m:
         return ("rs", None, int(m.group(1)))
     return None
+
+
+def citation_prefix(session: str) -> Optional[str]:
+    """'ls18-viii' -> 'lok_sabha/lok_sabha_18/Session_VIII/'; 'rs-271' -> 'rajya_sabha/Session_271/'."""
+    m = re.fullmatch(r"ls(\d+)-([ivx]+)", session or "")
+    if m:
+        return f"lok_sabha/lok_sabha_{m.group(1)}/Session_{m.group(2).upper()}/"
+    m = re.fullmatch(r"rs-(\d+)", session or "")
+    return f"rajya_sabha/Session_{m.group(1)}/" if m else None
+
+
+def session_label(session: str) -> str:
+    """'ls18-viii' -> 'Lok Sabha 18 Session VIII'; 'rs-271' -> 'Rajya Sabha Session 271'."""
+    m = re.fullmatch(r"ls(\d+)-([ivx]+)", session or "")
+    if m:
+        return f"Lok Sabha {m.group(1)} Session {m.group(2).upper()}"
+    m = re.fullmatch(r"rs-(\d+)", session or "")
+    return f"Rajya Sabha Session {m.group(1)}" if m else str(session)
 
 
 @dataclass

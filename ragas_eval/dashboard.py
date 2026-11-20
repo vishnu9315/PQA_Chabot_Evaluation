@@ -15,7 +15,8 @@ from collections import Counter
 from pathlib import Path
 
 from . import aggregate as agg
-from .report import INTERPRETATION_NOTES, PART1, PART2, PART2_FAITHFULNESS_FLAG, part2_facts
+from .report import (INTERPRETATION_NOTES, PART1, PART2, PART2_FAITHFULNESS_FLAG,
+                     missing_sessions_text, part2_facts)
 
 TITLE = "MeitY PQA Chatbot Evaluation"
 
@@ -149,9 +150,15 @@ def _part2_section(per_sample, esc) -> list:
     out.append(f'<li><b>Rows where the assistant said it lacked the information:</b> '
                f'{len(f["lacks"])}/{len(f["p2"])}' + (f' — {ids(f["lacks"])}' if f["lacks"] else "")
                + '</li>')
-    out.append('<li><b>Rajya Sabha 271 documents cited:</b> ' +
-               (f'YES on {ids(f["rs271"])}; Session 271 may be ingested' if f["rs271"] else
-                'none, so Session 271 is absent from the knowledge base as Part 2 assumes') + '</li>')
+    sessions = esc(missing_sessions_text(f))
+    if not f["missing_sessions"]:
+        out.append('<li><b>Documents from the not-ingested sessions cited:</b> not checked, '
+                   'because the Part 2 rows carry no session field.</li>')
+    else:
+        out.append(f'<li><b>Documents from {sessions} cited:</b> ' +
+                   (f'YES on {ids(f["cited_missing"])}; that session may be ingested'
+                    if f["cited_missing"] else
+                    'none, so it is absent from the knowledge base as Part 2 assumes') + '</li>')
     out.append("</ul>")
     return out
 

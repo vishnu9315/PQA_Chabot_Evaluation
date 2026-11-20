@@ -4,6 +4,7 @@
   "private": true,
   "description": "One-off Playwright OTP login + session capture, for capture_new_chatbot.py's PQA_CHATBOT_SESSION_FILE. Template copied from a previous project - see README.md.",
   "scripts": {
+    "login": "node scripts/login.mjs",
     "auth:capture": "playwright test --config=playwright.auth.config.ts"
   },
   "devDependencies": {

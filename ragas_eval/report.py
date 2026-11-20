@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Optional
 
 from . import aggregate as agg
+from .kb_index import citation_prefix, session_label
 
 _AGG_COLUMNS = ["metric", "label", "phase", "segment_type", "segment_value", "n", "n_scored",
                 "mean", "min", "max", "low_n", "na_skipped", "na_failed"]
@@ -125,9 +126,27 @@ def part2_facts(per_sample) -> Optional[dict]:
         "flagged": sorted(r["id"] for r in p2_ans
                           if (_score(r, "faithfulness") is not None
                               and _score(r, "faithfulness") < PART2_FAITHFULNESS_FLAG)),
-        "rs271": sorted(r["id"] for r in p2
-                        if any("Session_271" in c for c in r.get("cited_sources") or [])),
+        **_missing_sessions(p2),
     }
+
+
+def _missing_sessions(p2) -> dict:
+    """Sessions the Part 2 rows' answers come from (deliberately not ingested), read from
+    their own expected_sources, and the Part 2 rows that nevertheless cite a document from
+    one of them (which would mean that session IS in the knowledge base)."""
+    sessions = sorted({e.get("session") for r in p2
+                       for e in r.get("expected_sources_detail") or [] if e.get("session")})
+    prefixes = [p for p in (citation_prefix(s) for s in sessions) if p]
+    return {
+        "missing_sessions": [session_label(s) for s in sessions],
+        "cited_missing": sorted(r["id"] for r in p2
+                                if any(c.startswith(tuple(prefixes))
+                                       for c in r.get("cited_sources") or [])) if prefixes else [],
+    }
+
+
+def missing_sessions_text(f: dict) -> str:
+    return ", ".join(f["missing_sessions"]) or "sessions not recorded on the Part 2 rows"
 
 
 def part2_block(per_sample) -> list:
@@ -136,9 +155,10 @@ def part2_block(per_sample) -> list:
     if f is None:
         return []
     p1, p2, p1_ans, p2_ans = f["p1"], f["p2"], f["p1_ans"], f["p2_ans"]
-    lacks, flagged, rs271 = f["lacks"], f["flagged"], f["rs271"]
+    lacks, flagged, cited = f["lacks"], f["flagged"], f["cited_missing"]
+    sessions = missing_sessions_text(f)
     L = ["## 9. Part 2 (not ingested) — how the assistant behaves without the document", "",
-         "Part 2's answer documents (Rajya Sabha 271) are not in the KB, so source recall / "
+         f"Part 2's answer documents ({sessions}) are not in the KB, so source recall / "
          "precision are 0 **by design** and are not failures. Faithfulness is the main "
          "measure here (golden_dataset_README.md section 4).", ""]
     L.append(_md_table(["metric", "Part 1 (ingested)", "Part 2 (not ingested)"],
@@ -155,10 +175,14 @@ def part2_block(per_sample) -> list:
              + ". Review each for invented or undated-old figures (README 4.3).")
     L.append(f"- **Rows where the assistant said it lacked the information** (keyword match — "
              f"spot-check): {len(lacks)}/{len(p2)}" + (f" — {', '.join(lacks)}" if lacks else ""))
-    L.append(f"- **Rajya Sabha 271 documents cited** (README 4.1): "
-             + (f"YES on {', '.join(rs271)} — Session 271 may be ingested; report Part 2 as "
-                f"ingested questions instead" if rs271 else "none — Session 271 is absent "
-                "from the KB, as Part 2 assumes"))
+    if not f["missing_sessions"]:
+        L.append("- **Documents from the not-ingested sessions cited:** not checked, because "
+                 "the Part 2 rows' expected_sources carry no session field.")
+    else:
+        L.append(f"- **Documents from {sessions} cited** (README 4.1): "
+                 + (f"YES on {', '.join(cited)} — that session may be ingested; report Part 2 "
+                    f"as ingested questions instead" if cited else
+                    "none — absent from the KB, as Part 2 assumes"))
     L.append("")
     return L
 
