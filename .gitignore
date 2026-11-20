@@ -17,6 +17,7 @@ data/artifacts/*
 
 # Source documents (395 MB) are shared separately; drop them into documents/ locally.
 documents/
+documents*.zip
 
 # Chatbot outputs from the login-only portal stay local.
 runs_calib/
