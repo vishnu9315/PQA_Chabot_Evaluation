@@ -1,0 +1,67 @@
+{
+  "_description": "Describes the MeitY chatbot's chat/stream API contract, consumed by capture_new_chatbot.py. The base URL, API key and any extra headers are deliberately NOT hardcoded here - they come from environment variables at runtime (see .env.example).",
+
+  "_confirmed": "Confirmed 2026-11-20 via Playwright network capture of a genuine browser session asking a real golden-dataset question (GD-MTY-LS17-2-U2536-V) through the MeitY portal's standalone 'AI Assistant' chat at https://pqa.myscheme.in/meityy/ai-assistant, including a live two-turn follow-up test confirming conversation continuity.",
+
+  "method": "POST",
+  "endpoint_path": "/chat/stream",
+
+  "base_url_env": "PQA_CHATBOT_BASE_URL",
+  "base_url_note": "Set to https://pqa.myscheme.in/meityy/api/assistant (confirmed). capture_new_chatbot.py exits with a setup message if PQA_CHATBOT_BASE_URL is unset rather than falling back to any default.",
+
+  "request": {
+    "content_type": "application/json",
+    "query_field": "query",
+    "body_template": {
+      "query": "<row's user_input, verbatim - no wrapper prompt for this project, see capture/prompt.py's docstring>",
+      "type": "generate",
+      "messages": "<[...history turns, {role: user, content: query}] - see capture/client.py's history param>",
+      "user_id": "<a UUID, fixed per capture run>",
+      "session_id": "<a UUID, fresh per row>"
+    },
+    "note": "Confirmed live: no draft_context/sub_question/part_label here - that was the previous project's different, per-sub-question 'Draft with AI' contract. This is MeitY's general-purpose chat contract. `type` is always the literal string \"generate\" (confirmed from a real request, not a guess)."
+  },
+
+  "auth": {
+    "status": "CONFIRMED as session-cookie based, same mechanism and same email-OTP login flow as the previous project's portal (same myscheme.in platform family, different ministry slug: /meityy vs /comind).",
+    "mechanism": "cookie",
+    "session_file_env": "PQA_CHATBOT_SESSION_FILE",
+    "session_file_usage": "Path to a Playwright storageState JSON. capture/session.py extracts every cookie whose domain matches PQA_CHATBOT_BASE_URL's host and sends them as a single 'Cookie:' header. No cookie value is ever logged, printed, or written anywhere by this script.",
+    "cookie_header_env": "PQA_CHATBOT_COOKIE_HEADER",
+    "cookie_header_usage": "A raw 'Cookie:' header value, for supplying a session directly without a storageState file. Takes precedence over PQA_CHATBOT_SESSION_FILE if both are set.",
+    "api_key_env": "PQA_CHATBOT_API_KEY",
+    "api_key_usage": "Not used for this endpoint - kept as a generic fallback only.",
+    "extra_headers_env": "PQA_CHATBOT_EXTRA_HEADERS_JSON",
+    "extra_headers_usage": "Optional JSON object of additional request headers, merged in as-is.",
+    "on_401_403": "capture_new_chatbot.py raises CaptureAuthError (not a generic error) and ABORTS THE WHOLE RUN rather than retrying or continuing to the next row - a rejected session will reject every remaining row identically. See README.md 'Supplying a session cookie'."
+  },
+
+  "response": {
+    "format": "sse",
+    "terminal_event": "complete",
+    "answer_field": "answer",
+    "sources_field": "sources",
+    "other_observed_events": {
+      "status": "progress messages, e.g. {\"message\": \"Retrieving sources...\"} - ignored by capture",
+      "token": "streamed partial answer tokens, e.g. {\"token\": \"...\"} - ignored by capture; only the terminal 'complete' event's full answer is captured"
+    }
+  },
+
+  "source_object_fields": {
+    "identifier_field": "filename",
+    "preview_field": "text_preview",
+    "full_text_field": "full_text",
+    "preview_is_full_chunk": false,
+    "note": "CONFIRMED LIVE 2026-11-20: unlike the previous project's endpoint, this one's 'sources' entries carry a genuine `full_text` field (observed 2,000-3,000+ chars) distinct from and much longer than the ~500-char `text_preview` - verified by direct length/content comparison on real captured sources, not assumed. This means retrieved_contexts WILL populate for this project, and Faithfulness/Context Precision/Context Recall will NOT be NA by default the way they were for the previous project - a real, meaningful capability difference. Each source also carries: topic, filename, source_url, s3_url, score, assembly, session_date, question_number, question_type, section_type, answer_reference, contains_table, annexure_id, annexure_page, result_type, pages, chunk_count, document_fingerprint, ministry, answering_minister."
+  },
+
+  "known_from_live_probe": {
+    "date": "2026-11-20",
+    "verified_against": "https://pqa.myscheme.in/meityy/api/assistant/chat/stream",
+    "verified_request_body_example": { "query": "SOCIAL MEDIA MONITORING HUB\n\n2536. SHRI G.M. SIDDESHWAR:\n\n...", "type": "generate", "messages": [{"role": "user", "content": "<same as query>"}], "user_id": "2aac0017-...", "session_id": "efb0a146-..." },
+    "verified_auth": "browser session cookie from an email-OTP login; no Authorization header was sent and the call succeeded",
+    "verified_response_shape": "event: status (x3) -> event: token (many, streamed word-by-word) -> event: complete {\"answer\": \"...\", \"sources\": [{...}], \"query\": \"...\", \"total_results\": N, \"query_type\": \"parliamentary\", \"llmModel\": \"in.anthropic.claude-sonnet-5\", \"embeddingModel\": null, \"inputs_used\": []}",
+    "verified_continuity": "a second call reusing the same session_id/user_id but WITHOUT replaying history in messages did NOT carry context by itself in testing implication - the real frontend always replays full prior-turn history into messages regardless of session_id, and that replay is what the backend actually used (confirmed: a follow-up correctly resolved 'that Act you mentioned' to the specific Act discussed in the prior turn, citing the correct distinct source document).",
+    "note": "This block records what was actually observed during manual testing, for traceability. It is informational only - it is never read by capture_new_chatbot.py and must not be treated as a substitute for setting PQA_CHATBOT_BASE_URL / auth configuration explicitly."
+  }
+}

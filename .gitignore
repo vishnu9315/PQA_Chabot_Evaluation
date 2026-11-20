@@ -1,0 +1,26 @@
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+runs/
+*.pyc
+
+# Captured/output data is project-specific - keep the directory, not its contents.
+# judge_prompts_v1.md is an input the scorer needs, so it is versioned.
+data/artifacts/*
+!data/artifacts/.gitkeep
+!data/artifacts/judge_prompts_v1.md
+
+# Source documents (395 MB) are shared separately; drop them into documents/ locally.
+documents/
+
+# Chatbot outputs from the login-only portal stay local.
+runs_calib/
+share/
+
+# auth-capture/ has its own .gitignore for node_modules/.auth/etc.
+
+# Safety net: never commit a session/storageState file if one is ever dropped here
+# directly instead of referenced via PQA_CHATBOT_SESSION_FILE.
+session*.json
+*storageState*.json
