@@ -27,13 +27,11 @@ PROTECTED_FIELDS = (
 # Fields this script is responsible for populating from a live capture.
 CAPTURE_FIELDS = ("response", "retrieved_contexts", "cited_sources", "cited_sources_raw")
 
-# TEMPLATE: configurable (unlike the previous project, which hardcoded these to its own
-# 45/44/GD-0165 shape) - set these three env vars to your own dataset's actual shape.
-# Defaults match the previous project's dataset, just so an unconfigured run fails fast
-# with a clear mismatch message rather than silently validating against the wrong numbers.
-EXPECTED_TOTAL_ROWS = int(os.environ.get("GOLDEN_EXPECTED_TOTAL_ROWS", "45"))
-EXPECTED_RAGAS_ELIGIBLE = int(os.environ.get("GOLDEN_EXPECTED_RAGAS_ELIGIBLE", "44"))
-_judge_only_raw = os.environ.get("GOLDEN_EXPECTED_JUDGE_ONLY_IDS", "GD-0165")
+# Defaults are this project's dataset (meity-pq-SHORT-2part-v1: 66 rows, all
+# ragas_eligible, no judge-only rows); override with these env vars if the dataset changes.
+EXPECTED_TOTAL_ROWS = int(os.environ.get("GOLDEN_EXPECTED_TOTAL_ROWS", "66"))
+EXPECTED_RAGAS_ELIGIBLE = int(os.environ.get("GOLDEN_EXPECTED_RAGAS_ELIGIBLE", "66"))
+_judge_only_raw = os.environ.get("GOLDEN_EXPECTED_JUDGE_ONLY_IDS", "")
 EXPECTED_JUDGE_ONLY_IDS = tuple(x.strip() for x in _judge_only_raw.split(",") if x.strip())
 
 
@@ -50,7 +48,8 @@ def load_golden_dataset(path: Path) -> dict:
 
 def validate_row_counts(data: dict, *, where: str) -> None:
     """Raises DatasetIntegrityError unless the dataset has exactly the expected shape:
-    45 total rows, 44 ragas_eligible=True, and exactly the expected judge-only id(s)
+    EXPECTED_TOTAL_ROWS rows, EXPECTED_RAGAS_ELIGIBLE ragas_eligible=True, and exactly the
+    EXPECTED_JUDGE_ONLY_IDS
     with ragas_eligible=False. Called both before capture (on the golden input) and
     after (on the saved output), per the task's "validate before and after" requirement.
     """

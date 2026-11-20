@@ -99,6 +99,17 @@ def _split_metrics(names):
             [m for m in J.JUDGE_METRICS if m in names])
 
 
+def _require_scoring_input(cfg) -> None:
+    """Scoring needs captured chatbot answers, which are local and never committed."""
+    if not cfg.unified_eval_json.exists():
+        raise SystemExit(
+            f"[error] no scoring input yet: {cfg.unified_eval_json} is missing.\n"
+            "Captured chatbot answers are not part of the repository. Create them first:\n"
+            "  .venv/Scripts/python.exe capture_new_chatbot.py        # needs a portal login\n"
+            "  .venv/Scripts/python.exe tools/build_unified_eval.py   # builds the scoring input\n"
+            "or copy a teammate's data/artifacts/golden_dataset_final_unified_eval.json here.")
+
+
 def load_and_check(cfg, only_ids=None, skip_parity=False):
     """Parity gate + load + routing. Raises on any breach — never scores stale inputs.
 
@@ -108,6 +119,7 @@ def load_and_check(cfg, only_ids=None, skip_parity=False):
     otherwise crash on a FileNotFoundError for every single run. The moment a real
     freeze_manifest.json exists, this starts enforcing automatically.
     """
+    _require_scoring_input(cfg)
     parity = {} if (skip_parity or not cfg.parity_gate_available) else ds.parity_gate(cfg)
     samples = ds.load_samples()
     routing = ds.routing(samples)
@@ -166,6 +178,7 @@ def cmd_validate(cfg, args) -> int:
     print("VALIDATE — schema, routing, joins, and the parity gate (no API calls)")
     print("=" * 78)
 
+    _require_scoring_input(cfg)
     payload = ds.load_payload(cfg.unified_eval_json)
     print(f"[file]   note + amendments blocks present; n_rows={payload['n_rows']}")
 

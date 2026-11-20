@@ -97,7 +97,7 @@ class Config:
     thinking_budget: int = field(default_factory=lambda: _i("BEDROCK_THINKING_BUDGET", 24576))
 
     # Output ceiling. On Bedrock max_tokens caps TOTAL output INCLUDING reasoning tokens
-    # (reference ISSUE-9c); MoC answers decompose into long claim/NLI lists (annexure tables),
+    # (reference ISSUE-9c); long answers decompose into long claim/NLI lists (annexure tables),
     # so this sits near the model's output limit. A ceiling, not a reservation.
     ragas_max_tokens: int = field(default_factory=lambda: _i("RAGAS_MAX_TOKENS", 64000))
 
@@ -117,8 +117,8 @@ class Config:
     ragas_timeout: int = field(default_factory=lambda: _i("RAGAS_TIMEOUT", 1800))
     # Context Precision issues one LLM verdict per retrieved chunk SERIALLY inside the cell
     # (reference ISSUE-P7/P12): its deadline is max(ragas_timeout, per_chunk_timeout*n_chunks).
-    # MoC rows carry at most 5 retrieved chunks, so this rarely binds — ported anyway so a
-    # future capture with bigger retrieval dumps cannot resurrect the bug.
+    # MeitY captures carry up to 10 retrieved chunks per row, so 300s x 10 stays well under
+    # the cap; the shaping guards against bigger retrieval dumps.
     per_chunk_timeout: int = field(default_factory=lambda: _i("PER_CHUNK_TIMEOUT", 300))
     bedrock_read_timeout: int = field(default_factory=lambda: _i("BEDROCK_READ_TIMEOUT", 900))
     bedrock_connect_timeout: int = field(default_factory=lambda: _i("BEDROCK_CONNECT_TIMEOUT", 60))
@@ -146,12 +146,11 @@ class Config:
     documents_dir: Path = field(default_factory=lambda: Path(
         _s("PQA_DOCUMENTS_DIR", str(ROOT / "documents"))).resolve())
 
-    # TEMPLATE: 45 was the previous project's row count - set MOC_EXPECTED_N (or pass your
-    # own default here) to your own golden dataset's actual row count.
-    expected_sample_count: int = field(default_factory=lambda: _i("MOC_EXPECTED_N", 45))
+    # This project's dataset size (meity-pq-SHORT-2part-v1); override with MOC_EXPECTED_N.
+    expected_sample_count: int = field(default_factory=lambda: _i("MOC_EXPECTED_N", 66))
 
-    # --- report segments. Provenance FIRST (S10 spec): the pilot-v2 and legacy-v1 subsets
-    # have different lineage and must always be readable separately. ---
+    # --- report segments. Provenance FIRST: Part 1 (ingested) and Part 2 (not ingested)
+    # must always be readable separately, never averaged together. ---
     segments: tuple = ("provenance", "expected_behavior", "difficulty", "stratum",
                       "category", "house")
 
